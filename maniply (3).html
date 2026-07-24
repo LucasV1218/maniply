@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MANIPLY</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --black:#060608; --white:#fff;
+      --dim:rgba(255,255,255,0.72); --muted:rgba(255,255,255,0.25);
+      --border:rgba(255,255,255,0.10); --green:#5fe3a1; --red:#ff6b6b;
+    }
+    html { scroll-behavior:smooth; }
+    body { background:var(--black); color:var(--white); font-family:'Inter',sans-serif; overflow-x:hidden; min-height:100vh; font-size:17px; }
+
+    /* ── GLASS BG ── */
+    .glass-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+    .blob {
+      position:absolute; border-radius:50%;
+      background:radial-gradient(ellipse at 38% 32%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.07) 45%, transparent 100%);
+      backdrop-filter:blur(48px) saturate(2.2);
+      -webkit-backdrop-filter:blur(48px) saturate(2.2);
+      box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.10), inset 1px 0 0 rgba(255,255,255,0.20), 0 0 120px rgba(255,255,255,0.06), 0 0 240px rgba(180,160,255,0.06);
+      border:1px solid rgba(255,255,255,0.22);
+    }
+    .blob::before { content:''; position:absolute; inset:0; border-radius:inherit; background:conic-gradient(from 200deg at 30% 25%, rgba(120,200,255,0.22), rgba(180,120,255,0.18), rgba(95,227,161,0.16), rgba(255,200,100,0.10), rgba(120,200,255,0.08)); mix-blend-mode:screen; }
+    .blob::after { content:''; position:absolute; top:8%; left:14%; width:38%; height:28%; border-radius:50%; background:radial-gradient(ellipse, rgba(255,255,255,0.55) 0%, transparent 100%); filter:blur(6px); }
+    .blob-1 { width:680px; height:680px; top:-160px; right:-120px; animation:drift1 22s ease-in-out infinite alternate; }
+    .blob-2 { width:460px; height:460px; bottom:5%; left:-100px; animation:drift2 28s ease-in-out infinite alternate; }
+    .blob-3 { width:320px; height:320px; top:38%; left:55%; animation:drift3 18s ease-in-out infinite alternate; }
+    .blob-4 { width:220px; height:220px; top:62%; right:8%; opacity:.8; animation:drift1 24s ease-in-out infinite alternate-reverse; }
+    @keyframes drift1 { from{transform:translate(0,0) rotate(0) scale(1)} to{transform:translate(30px,50px) rotate(8deg) scale(1.06)} }
+    @keyframes drift2 { from{transform:translate(0,0) rotate(0) scale(1)} to{transform:translate(-20px,-40px) rotate(-6deg) scale(1.04)} }
+    @keyframes drift3 { from{transform:translate(0,0) scale(1)} to{transform:translate(16px,-22px) scale(1.1)} }
+    .ribbon { position:fixed; pointer-events:none; z-index:0; }
+
+    /* ── NAV ── */
+    nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-items:center; justify-content:space-between; padding:14px 48px; background:rgba(6,6,8,0.72); backdrop-filter:blur(28px) saturate(1.6); -webkit-backdrop-filter:blur(28px) saturate(1.6); border-bottom:1px solid rgba(255,255,255,0.07); }
+    .logo { display:flex; align-items:center; gap:10px; font-weight:900; font-size:1.1rem; letter-spacing:.06em; text-decoration:none; color:var(--white); cursor:pointer; }
+    .logo-mark { width:34px; height:34px; background:linear-gradient(145deg,#222228,#111114); border:1px solid rgba(255,255,255,0.12); border-radius:9px; display:flex; align-items:center; justify-content:center; font-style:italic; font-weight:900; font-size:1.1rem; box-shadow:inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.5); }
+    .nav-links { display:flex; gap:2px; list-style:none; }
+    .nav-links a { color:var(--dim); text-decoration:none; font-size:.94rem; font-weight:500; letter-spacing:.02em; padding:7px 13px; border-radius:20px; transition:color .2s, background .2s; cursor:pointer; }
+    .nav-links a:hover { color:var(--white); background:rgba(255,255,255,0.05); }
+    .nav-links a.active { color:var(--white); background:rgba(255,255,255,0.08); }
+    .nav-cta { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:30px; padding:8px 20px; font-size:.92rem; font-weight:600; color:var(--white); cursor:pointer; backdrop-filter:blur(8px); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08); transition:background .2s, border-color .2s; }
+    .nav-cta:hover { background:rgba(255,255,255,0.11); border-color:rgba(255,255,255,0.24); }
+
+    /* ── PAGES ── */
+    .page { display:none; position:relative; z-index:1; min-height:100vh; animation:pageIn .4s ease; }
+    .page.active { display:block; }
+    @keyframes pageIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+
+    /* ── SHARED ── */
+    .sec { padding:108px 56px 80px; }
+    .container { max-width:1160px; margin:0 auto; }
+    .eyebrow { font-size:.78rem; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--green); margin-bottom:14px; display:block; }
+    .sec-title { font-size:clamp(2.2rem,5vw,3.8rem); font-weight:900; text-transform:uppercase; letter-spacing:-.02em; line-height:.95; margin-bottom:20px; }
+    .sec-body { font-size:1.12rem; color:var(--dim); line-height:1.8; max-width:640px; margin-bottom:52px; }
+    .page-hero { padding:136px 56px 52px; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .page-hero .container { display:flex; align-items:flex-end; justify-content:space-between; gap:40px; }
+    .page-hero-sub { font-size:1.12rem; color:var(--dim); max-width:420px; line-height:1.7; }
+
+    /* Glass card */
+    .gc { background:rgba(255,255,255,0.065); border:1px solid rgba(255,255,255,0.16); border-radius:20px; backdrop-filter:blur(24px) saturate(1.8); -webkit-backdrop-filter:blur(24px) saturate(1.8); box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(255,255,255,0.06), 0 8px 40px rgba(0,0,0,0.35); position:relative; overflow:hidden; transition:border-color .25s, transform .25s, box-shadow .25s; }
+    .gc::before { content:''; position:absolute; inset:0; border-radius:inherit; background:linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(200,180,255,0.04) 30%, rgba(120,200,255,0.04) 60%, rgba(255,255,255,0.02) 100%); pointer-events:none; z-index:0; }
+    .gc > * { position:relative; z-index:1; }
+    .gc:hover { border-color:rgba(255,255,255,0.28); transform:translateY(-3px); box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.4), 0 20px 60px rgba(0,0,0,0.4); }
+
+    footer { position:relative; z-index:1; border-top:1px solid rgba(255,255,255,0.07); padding:24px 56px; display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:.82rem; letter-spacing:.06em; }
+
+    /* Fade in */
+    .fi { opacity:0; transform:translateY(20px); transition:opacity .6s ease, transform .6s ease; }
+    .fi.v { opacity:1; transform:none; }
+
+    /* Buttons */
+    .btn-primary { display:inline-flex; align-items:center; gap:10px; background:var(--white); color:var(--black); font-weight:700; font-size:.98rem; letter-spacing:.04em; padding:15px 32px; border-radius:50px; border:none; cursor:pointer; box-shadow:0 8px 28px rgba(0,0,0,0.4); transition:transform .2s, box-shadow .2s; }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 12px 40px rgba(255,255,255,0.18); }
+    .btn-ghost { display:inline-flex; align-items:center; gap:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.16); color:var(--white); font-weight:600; font-size:.98rem; padding:15px 32px; border-radius:50px; cursor:pointer; backdrop-filter:blur(8px); transition:background .2s; }
+    .btn-ghost:hover { background:rgba(255,255,255,0.09); }
+
+    /* ════════════ HOME ════════════ */
+    .hero { min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:130px 40px 80px; }
+    .hero-content { max-width:840px; }
+    .hero-pill { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:30px; padding:6px 16px; font-size:.73rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:36px; backdrop-filter:blur(8px); }
+    .hero-pill-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 10px var(--green); flex-shrink:0; }
+    .hero-title { font-size:clamp(3.5rem,11vw,10rem); font-weight:900; letter-spacing:-.04em; line-height:.88; text-transform:uppercase; margin-bottom:28px; white-space:nowrap; }
+    .hero-tagline { font-size:clamp(1.1rem,2.4vw,1.35rem); color:var(--dim); font-weight:400; line-height:1.65; max-width:540px; margin:0 auto 52px; }
+    .hero-actions { display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+    .stats-bar { border-top:1px solid rgba(255,255,255,0.07); border-bottom:1px solid rgba(255,255,255,0.07); padding:28px 56px; display:flex; align-items:center; background:rgba(255,255,255,0.015); backdrop-filter:blur(12px); position:relative; z-index:1; }
+    .stat { flex:1; text-align:center; padding:0 32px; border-right:1px solid rgba(255,255,255,0.07); }
+    .stat:last-child { border-right:none; }
+    .stat-num { font-size:2rem; font-weight:900; letter-spacing:-.03em; }
+    .stat-label { font-size:.8rem; color:var(--dim); letter-spacing:.1em; text-transform:uppercase; margin-top:4px; }
+    .what-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .what-card { padding:38px; }
+    .what-card.big { grid-column:1/-1; display:flex; align-items:center; gap:48px; }
+    .what-card h3 { font-size:1.05rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+    .what-card p { font-size:1.02rem; color:var(--dim); line-height:1.8; }
+    .what-icon { font-size:1.8rem; margin-bottom:16px; display:block; }
+    .app-icon { width:120px; height:120px; flex-shrink:0; background:linear-gradient(145deg,#1e1e24,#0c0c10); border-radius:28px; border:1px solid rgba(255,255,255,0.1); box-shadow:inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 64px rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; font-size:3rem; font-weight:900; font-style:italic; position:relative; }
+    .app-icon::before { content:''; position:absolute; top:0; left:0; right:0; height:50%; border-radius:28px 28px 50% 50%; background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,transparent 100%); }
+
+    /* ════════════ HOW ════════════ */
+    .how-layout { display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:start; }
+    .flow-list { display:flex; flex-direction:column; gap:6px; }
+    .flow-item { display:flex; align-items:flex-start; gap:18px; padding:20px; border-radius:14px; border:1px solid transparent; transition:background .2s, border-color .2s; }
+    .flow-item:hover { background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.08); }
+    .flow-icon { width:46px; height:46px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+    .flow-text { display:flex; flex-direction:column; gap:4px; }
+    .flow-sub { font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--green); }
+    .flow-item span.flow-desc { font-size:1.02rem; font-weight:500; color:var(--dim); line-height:1.5; }
+    .flow-item span.flow-desc strong { color:var(--white); font-weight:700; }
+    .flow-item.accent { border-color:rgba(95,227,161,0.2); background:rgba(95,227,161,0.04); }
+    .flow-item.accent .flow-desc { color:var(--green); }
+    .flow-item.accent .flow-icon { background:rgba(95,227,161,0.10); color:var(--green); border-color:rgba(95,227,161,0.25); }
+    .flow-item.accent .flow-sub { color:var(--white); }
+    .flow-item { flex-direction:column; align-items:stretch; gap:12px; }
+    .flow-mock { padding:14px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; }
+    .flow-item.accent .flow-mock { background:rgba(95,227,161,0.05); border-color:rgba(95,227,161,0.18); }
+
+    /* mock: linha de produto */
+    .mock-row { display:flex; align-items:center; gap:12px; }
+    .mock-emoji { font-size:1.5rem; width:38px; height:38px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); border-radius:10px; flex-shrink:0; }
+    .mock-row-info { display:flex; flex-direction:column; gap:2px; flex:1; }
+    .mock-row-title { font-size:.9rem; font-weight:700; color:var(--white); }
+    .mock-row-sub { font-size:.78rem; color:var(--dim); }
+    .mock-badge { font-size:.76rem; font-weight:700; color:var(--green); background:rgba(95,227,161,0.12); border:1px solid rgba(95,227,161,0.3); padding:4px 10px; border-radius:20px; }
+
+    /* mock: tags de ingredientes */
+    .mock-tags { display:flex; flex-wrap:wrap; gap:8px; }
+    .mock-tag { font-size:.78rem; font-weight:600; color:var(--dim); background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:6px 12px; border-radius:20px; white-space:nowrap; }
+    .mock-tag.main { color:var(--white); background:rgba(255,255,255,0.09); border-color:rgba(255,255,255,0.2); font-weight:700; }
+    .mock-tag.small { font-size:.72rem; padding:4px 10px; }
+
+    /* mock: vínculo produto -> ingredientes */
+    .mock-link { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .mock-link-line { width:26px; height:1px; background:repeating-linear-gradient(90deg, rgba(95,227,161,0.6) 0 6px, transparent 6px 10px); flex-shrink:0; }
+    .mock-link-targets { display:flex; gap:6px; flex-wrap:wrap; }
+
+    /* mock: ticket de pedido */
+    .mock-ticket { display:flex; flex-direction:column; gap:6px; border-left:2px dashed rgba(255,255,255,0.18); padding-left:14px; }
+    .mock-ticket-num { font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--green); }
+    .mock-ticket-item { font-size:.88rem; color:var(--white); font-weight:500; }
+    .mock-ticket-item strong { color:var(--green); }
+    .mock-ticket-client { font-size:.78rem; color:var(--dim); }
+
+    /* mock: consulta/verificação */
+    .mock-scan { display:flex; align-items:center; gap:10px; }
+    .mock-scan-glass { font-size:1.1rem; animation:scanPulse 1.6s ease-in-out infinite; }
+    @keyframes scanPulse { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
+    .mock-scan-label { font-size:.78rem; color:var(--dim); font-style:italic; }
+
+    /* mock: barra de estoque */
+    .mock-stock { display:flex; flex-direction:column; gap:8px; }
+    .mock-stock-labels { display:flex; justify-content:space-between; font-size:.78rem; color:var(--dim); }
+    .mock-stock-labels span:last-child { color:var(--green); font-weight:700; }
+    .mock-stock-bar { position:relative; height:8px; border-radius:6px; background:rgba(255,255,255,0.08); overflow:hidden; }
+    .mock-stock-fill { position:absolute; inset:0; width:100%; background:var(--green); border-radius:6px; animation:stockDrop 2.2s ease-in-out infinite; transform-origin:left; }
+    @keyframes stockDrop { 0%,100%{width:100%} 55%,80%{width:75%} }
+    .compare-cards { display:flex; flex-direction:column; gap:14px; }
+    .cmp-card { padding:26px 28px; }
+    .cmp-card h4 { font-size:.86rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; }
+    .cmp-card p { font-size:.98rem; color:var(--dim); line-height:1.75; }
+    .cmp-card.good { border-color:rgba(95,227,161,0.2); background:rgba(95,227,161,0.028); }
+    .cmp-card.good h4 { color:var(--green); }
+
+    /* ════════════ FEATURES ════════════ */
+    .feat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .feat-big { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .feat { padding:30px 26px; }
+    .feat-big .feat { padding:38px 32px; }
+    .feat-icon { font-size:1.8rem; margin-bottom:16px; display:block; }
+    .feat h3 { font-size:1rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; }
+    .feat p { font-size:.96rem; color:var(--dim); line-height:1.72; }
+    .feat.soon { border-color:rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); }
+
+    /* ════════════ PRODUCTS (CADASTRO) ════════════ */
+    .products-layout { display:grid; grid-template-columns:1fr 1.4fr; gap:24px; align-items:start; }
+    .form-card { padding:36px; }
+    .form-card h3 { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--dim); margin-bottom:28px; }
+    .form-group { margin-bottom:18px; }
+    .form-group label { display:block; font-size:.74rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+    .form-input {
+      width:100%; padding:13px 18px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:12px; color:var(--white); font-family:'Inter',sans-serif; font-size:.9rem; outline:none; transition:border-color .2s, background .2s;
+    }
+    .form-input:focus { border-color:rgba(255,255,255,0.32); background:rgba(255,255,255,0.07); }
+    .form-input::placeholder { color:rgba(255,255,255,0.22); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .segment-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+    .segment-chip { display:flex; align-items:center; gap:8px; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:var(--dim); font-family:'Inter',sans-serif; font-size:.82rem; font-weight:600; cursor:pointer; transition:background .18s, border-color .18s, color .18s, transform .12s; text-align:left; }
+    .segment-chip-icon { font-size:1.05rem; flex-shrink:0; }
+    .segment-chip:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.22); color:var(--white); transform:translateY(-1px); }
+    .segment-chip.picked { background:rgba(95,227,161,0.12); border-color:rgba(95,227,161,0.5); color:var(--white); box-shadow:inset 0 0 0 1px rgba(95,227,161,0.25); }
+    .form-submit { width:100%; padding:15px; background:var(--white); color:var(--black); font-weight:700; font-size:.9rem; letter-spacing:.04em; border:none; border-radius:12px; cursor:pointer; margin-top:8px; transition:opacity .2s, transform .2s; }
+    .form-submit:hover { opacity:.9; transform:translateY(-1px); }
+    .form-msg { display:none; margin-top:14px; padding:12px 18px; border-radius:10px; font-size:.84rem; font-weight:600; }
+    .form-msg.success { background:rgba(95,227,161,0.1); border:1px solid rgba(95,227,161,0.25); color:var(--green); }
+
+    /* product list panel */
+    .prod-panel { padding:28px; }
+    .prod-panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+    .prod-panel-header h3 { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--dim); }
+    .prod-count { background:rgba(255,255,255,0.08); border-radius:20px; padding:4px 12px; font-size:.74rem; font-weight:700; }
+    .prod-list { display:flex; flex-direction:column; gap:10px; max-height:480px; overflow-y:auto; padding-right:4px; }
+    .prod-list::-webkit-scrollbar { width:4px; }
+    .prod-list::-webkit-scrollbar-track { background:rgba(255,255,255,0.03); border-radius:2px; }
+    .prod-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:2px; }
+    .prod-item { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; transition:border-color .2s; }
+    .prod-item:hover { border-color:rgba(255,255,255,0.16); }
+    .prod-item-info { display:flex; flex-direction:column; gap:4px; }
+    .prod-item-name { font-size:.92rem; font-weight:700; }
+    .prod-item-cat { font-size:.74rem; color:var(--dim); letter-spacing:.04em; }
+    .prod-item-right { display:flex; align-items:center; gap:16px; }
+    .prod-item-price { font-size:.95rem; font-weight:700; }
+    .prod-item-qty { font-size:.78rem; color:var(--dim); background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:8px; }
+    .prod-item-del { background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.25); font-size:1rem; transition:color .2s; }
+    .prod-item-del:hover { color:var(--red); }
+    .prod-empty { text-align:center; padding:48px 0; color:rgba(255,255,255,0.2); font-size:.88rem; }
+
+    /* ════════════ SISTEMA (APP SEPARADO) ════════════ */
+    .sys-shell { border:1px solid rgba(255,255,255,0.14); border-radius:26px; background:rgba(255,255,255,0.03); overflow:hidden; }
+    .sys-topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 30px; border-bottom:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); flex-wrap:wrap; }
+    .sys-brand { display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.04em; font-size:.95rem; }
+    .sys-brand .logo-mark { width:28px; height:28px; font-size:.9rem; }
+    .sys-brand-tag { font-size:.68rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--green); background:rgba(95,227,161,0.08); border:1px solid rgba(95,227,161,0.2); padding:4px 10px; border-radius:20px; margin-left:8px; }
+    .sys-tabs { display:flex; gap:4px; flex-wrap:wrap; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:5px; }
+    .sys-tab { border:none; background:transparent; color:var(--dim); font-family:'Inter',sans-serif; font-size:.8rem; font-weight:600; letter-spacing:.02em; padding:9px 16px; border-radius:11px; cursor:pointer; transition:background .2s,color .2s; white-space:nowrap; }
+    .sys-tab:hover { color:var(--white); }
+    .sys-tab.active { background:rgba(255,255,255,0.12); color:var(--white); }
+    .sys-body { padding:36px; }
+    .sys-view { display:none; }
+    .sys-view.active { display:block; animation:pageIn .35s ease; }
+    .sys-view-head { margin-bottom:26px; }
+    .sys-view-head h2 { font-size:1.5rem; font-weight:900; text-transform:uppercase; letter-spacing:-.02em; margin-bottom:8px; }
+    .sys-view-head p { color:var(--dim); font-size:.88rem; max-width:520px; line-height:1.7; }
+
+    /* Cadastro empreendedor */
+    .founder-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:14px; }
+    .divider-label { display:flex; align-items:center; gap:14px; margin:34px 0 20px; color:var(--muted); font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+    .divider-label::before,.divider-label::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.08); }
+
+    /* Loja (clientes) */
+    .store-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .store-card { padding:24px; display:flex; flex-direction:column; gap:12px; }
+    .store-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .store-card-cat { font-size:.66rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:20px; }
+    .store-card-name { font-size:1rem; font-weight:700; }
+    .store-card-price { font-size:1.25rem; font-weight:900; letter-spacing:-.02em; }
+    .store-card-stock { font-size:.76rem; color:var(--dim); }
+    .store-card-stock.low { color:var(--red); }
+    .store-buy-row { display:flex; gap:8px; margin-top:auto; padding-top:6px; }
+    .store-qty { width:60px; padding:11px 10px; text-align:center; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:var(--white); font-family:'Inter',sans-serif; font-size:.86rem; }
+    .store-buy-btn { flex:1; background:var(--white); color:var(--black); border:none; border-radius:10px; font-weight:700; font-size:.82rem; cursor:pointer; transition:opacity .2s, transform .2s; }
+    .store-buy-btn:hover { opacity:.9; transform:translateY(-1px); }
+    .store-buy-btn:disabled { opacity:.3; cursor:not-allowed; transform:none; }
+    .store-empty { text-align:center; padding:60px 0; color:rgba(255,255,255,0.2); font-size:.88rem; grid-column:1/-1; }
+    .cart-toast { display:none; margin-top:20px; padding:14px 20px; border-radius:12px; font-size:.84rem; font-weight:600; background:rgba(95,227,161,0.1); border:1px solid rgba(95,227,161,0.25); color:var(--green); }
+
+    /* Vendas / histórico */
+    .sales-list { display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-right:4px; }
+    .sale-row { display:flex; align-items:center; justify-content:space-between; padding:13px 18px; background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.08); border-radius:12px; font-size:.84rem; }
+    .sale-row-l { display:flex; flex-direction:column; gap:2px; }
+    .sale-row-name { font-weight:700; }
+    .sale-row-meta { font-size:.72rem; color:var(--dim); }
+    .sale-row-total { font-weight:800; color:var(--green); }
+    .sales-empty { text-align:center; padding:36px 0; color:rgba(255,255,255,0.2); font-size:.86rem; }
+
+    /* Suporte */
+    .support-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .faq-item { padding:20px 24px; cursor:pointer; }
+    .faq-q { display:flex; align-items:center; justify-content:space-between; font-size:.9rem; font-weight:700; gap:14px; }
+    .faq-q .faq-plus { font-size:1.1rem; color:var(--dim); transition:transform .2s; flex-shrink:0; }
+    .faq-item.open .faq-plus { transform:rotate(45deg); }
+    .faq-a { max-height:0; overflow:hidden; transition:max-height .3s ease; }
+    .faq-item.open .faq-a { max-height:200px; }
+    .faq-a p { padding-top:12px; font-size:.84rem; color:var(--dim); line-height:1.7; }
+    .faq-stack { display:flex; flex-direction:column; gap:10px; }
+    .support-channels { display:flex; flex-direction:column; gap:10px; margin-top:20px; }
+
+    /* Sobre nós (dentro do sistema) */
+    .aboutus-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .aboutus-card { padding:26px; }
+    .aboutus-card h4 { font-size:.86rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; }
+    .aboutus-card p { font-size:.84rem; color:var(--dim); line-height:1.75; }
+
+    @media(max-width:900px) {
+      .sys-body { padding:24px; }
+      .founder-layout,.store-grid,.support-layout,.aboutus-grid { grid-template-columns:1fr; }
+      .sys-topbar { padding:18px 20px; }
+    }
+
+    /* ════════════ DASHBOARD ════════════ */
+    .dash-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px; }
+    .dash-stat-card { padding:28px; }
+    .dash-stat-card .ds-label { font-size:.7rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin-bottom:10px; display:block; }
+    .dash-stat-card .ds-val { font-size:2.2rem; font-weight:900; letter-spacing:-.03em; }
+    .dash-stat-card .ds-sub { font-size:.76rem; color:var(--dim); margin-top:6px; }
+    .dash-stat-card .ds-trend { display:inline-flex; align-items:center; gap:4px; font-size:.74rem; font-weight:700; padding:3px 10px; border-radius:20px; margin-top:8px; }
+    .dash-stat-card .ds-trend.up { background:rgba(95,227,161,0.1); color:var(--green); }
+    .dash-stat-card .ds-trend.warn { background:rgba(255,200,80,0.1); color:#ffc850; }
+
+    .dash-bottom { display:grid; grid-template-columns:1.4fr 1fr; gap:14px; }
+    .dash-chart-card { padding:28px; }
+    .dash-chart-card h4 { font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--dim); margin-bottom:24px; }
+    .bar-chart { display:flex; align-items:flex-end; gap:10px; height:140px; }
+    .bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+    .bar { width:100%; border-radius:6px 6px 0 0; background:linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 100%); transition:height .6s cubic-bezier(.22,.68,0,1.2); }
+    .bar.accent { background:linear-gradient(180deg, var(--green) 0%, rgba(95,227,161,0.4) 100%); }
+    .bar-lbl { font-size:.68rem; color:var(--dim); }
+    .dash-stock-card { padding:28px; }
+    .dash-stock-card h4 { font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--dim); margin-bottom:18px; }
+    .stock-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .stock-row:last-child { border-bottom:none; }
+    .stock-name { font-size:.86rem; font-weight:600; }
+    .stock-bar-wrap { flex:1; margin:0 16px; height:5px; background:rgba(255,255,255,0.07); border-radius:3px; }
+    .stock-bar-fill { height:100%; border-radius:3px; background:rgba(255,255,255,0.35); }
+    .stock-bar-fill.low { background:var(--red); }
+    .stock-bar-fill.ok { background:var(--green); }
+    .stock-val { font-size:.78rem; color:var(--dim); }
+
+    /* ════════════ TECH ════════════ */
+    .tech-stack { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .tech-card { padding:34px; }
+    .tech-card-icon { font-size:2.2rem; margin-bottom:18px; display:block; }
+    .tech-card h3 { font-size:.95rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; }
+    .tech-card p { font-size:.86rem; color:var(--dim); line-height:1.75; }
+    .tech-tag { display:inline-block; margin-top:14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:4px 14px; font-size:.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+    .tech-future { padding:32px; margin-top:0; }
+    .tech-future h3 { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-bottom:16px; }
+    .future-items { display:flex; gap:10px; flex-wrap:wrap; }
+    .future-tag { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:30px; padding:9px 18px; font-size:.8rem; font-weight:600; color:var(--dim); }
+    .future-tag .dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.35); flex-shrink:0; }
+    .timeline-steps { display:flex; gap:0; }
+    .ts { flex:1; padding:22px 18px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.025); }
+    .ts:first-child { border-radius:14px 0 0 14px; }
+    .ts:last-child { border-radius:0 14px 14px 0; border-left:none; }
+    .ts:not(:first-child):not(:last-child) { border-left:none; }
+    .ts-label { font-size:.63rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+    .ts-title { font-size:.88rem; font-weight:700; margin-bottom:5px; }
+    .ts-body { font-size:.78rem; color:var(--dim); line-height:1.55; }
+    .ts.active-phase { background:rgba(95,227,161,0.04); border-color:rgba(95,227,161,0.2); }
+    .ts.active-phase .ts-label { color:var(--green); }
+    .arch-timeline { margin-top:14px; }
+
+    /* ════════════ ABOUT ════════════ */
+    .about-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+    .about-main { padding:44px; }
+    .about-main h2 { font-size:clamp(1.8rem,3.5vw,2.8rem); font-weight:900; text-transform:uppercase; letter-spacing:-.02em; line-height:.95; margin-bottom:20px; }
+    .about-main p { font-size:.95rem; color:var(--dim); line-height:1.85; margin-bottom:16px; }
+    .about-side { display:flex; flex-direction:column; gap:14px; }
+    .about-card { padding:28px 30px; }
+    .about-card h4 { font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin-bottom:8px; }
+    .about-card p { font-size:.9rem; font-weight:600; }
+    .about-card span { font-size:.82rem; color:var(--dim); display:block; margin-top:6px; line-height:1.6; }
+    .problem-tags { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+    .ptag { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; font-size:.84rem; color:var(--dim); }
+    .ptag::before { content:'›'; font-size:1.1rem; color:var(--white); }
+
+    /* ════════════ CONTACT ════════════ */
+    .contact-big { padding:140px 56px 60px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .contact-big h1 { font-size:clamp(4rem,10vw,8.5rem); font-weight:900; text-transform:uppercase; letter-spacing:-.04em; line-height:.88; margin-bottom:22px; }
+    .contact-big p { color:var(--dim); font-size:1rem; max-width:440px; margin:0 auto; line-height:1.7; }
+    .contact-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .contact-main { padding:44px; display:flex; flex-direction:column; justify-content:space-between; min-height:320px; }
+    .contact-main h2 { font-size:1.6rem; font-weight:900; text-transform:uppercase; letter-spacing:-.02em; margin-bottom:14px; }
+    .contact-main p { color:var(--dim); font-size:.9rem; line-height:1.8; margin-bottom:28px; }
+    .contact-links { display:flex; flex-direction:column; gap:10px; }
+    .contact-link { display:inline-flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:50px; padding:13px 22px; font-size:.86rem; font-weight:600; color:var(--white); text-decoration:none; backdrop-filter:blur(8px); transition:background .2s, border-color .2s; }
+    .contact-link:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.26); }
+    .contact-side { display:flex; flex-direction:column; gap:14px; }
+    .contact-info-card { padding:28px 30px; }
+    .contact-info-card h4 { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin-bottom:8px; }
+    .contact-info-card p { font-size:.9rem; font-weight:600; }
+    .contact-info-card span { font-size:.82rem; color:var(--dim); display:block; margin-top:5px; line-height:1.6; }
+
+    /* ════════════ RESPONSIVE ════════════ */
+    @media(max-width:900px) {
+      nav { padding:13px 20px; }
+      .nav-links { display:none; }
+      .sec { padding:96px 20px 60px; }
+      .page-hero { padding:108px 20px 40px; }
+      .page-hero .container { flex-direction:column; align-items:flex-start; }
+      .stats-bar { padding:22px 20px; flex-wrap:wrap; gap:20px; }
+      .stat { border-right:none; flex:0 0 calc(50% - 10px); padding:0; }
+      .what-grid,.how-layout,.feat-grid,.feat-big,.tech-stack,.dash-grid,.dash-bottom,.about-layout,.contact-layout,.products-layout { grid-template-columns:1fr; }
+      .what-card.big { flex-direction:column; gap:24px; }
+      .dash-grid { grid-template-columns:1fr 1fr; }
+      .timeline-steps { flex-direction:column; }
+      .ts { border-left:1px solid rgba(255,255,255,0.08)!important; border-radius:0!important; border-top:none; }
+      .ts:first-child { border-radius:14px 14px 0 0!important; border-top:1px solid rgba(255,255,255,0.08)!important; }
+      .ts:last-child { border-radius:0 0 14px 14px!important; }
+      .contact-big { padding:108px 20px 48px; }
+      footer { flex-direction:column; gap:8px; text-align:center; padding:24px 20px; }
+    }
+    @media(prefers-reduced-motion:reduce) { .blob { animation:none; } }
+  </style>
+</head>
+<body>
+
+<!-- GLASS BG -->
+<div class="glass-canvas" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+  <svg class="ribbon" style="right:-60px;top:60px;width:420px;opacity:.9;" viewBox="0 0 420 700" fill="none">
+    <path d="M210 30 C310 120 340 260 260 380 C180 500 120 560 180 680" stroke="url(#r1a)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M210 30 C310 120 340 260 260 380 C180 500 120 560 180 680 C195 680 200 670 200 660 C145 545 202 492 278 374 C358 252 326 116 222 28 Z" fill="url(#rf1)" opacity=".45"/>
+    <defs>
+      <linearGradient id="r1a" x1="160" y1="0" x2="300" y2="700" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(200,220,255,0.8)"/><stop offset="40%" stop-color="rgba(180,140,255,0.6)"/><stop offset="70%" stop-color="rgba(95,227,161,0.6)"/><stop offset="100%" stop-color="rgba(255,200,120,0.4)"/></linearGradient>
+      <linearGradient id="rf1" x1="160" y1="0" x2="300" y2="700" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(160,200,255,1)"/><stop offset="50%" stop-color="rgba(160,120,255,1)"/><stop offset="100%" stop-color="rgba(95,227,161,1)"/></linearGradient>
+    </defs>
+  </svg>
+  <svg class="ribbon" style="left:-50px;bottom:50px;width:300px;opacity:.75;transform:rotate(15deg)" viewBox="0 0 300 500" fill="none">
+    <path d="M150 20 C230 100 240 210 180 310 C120 415 65 450 100 520" stroke="url(#r2a)" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M150 20 C230 100 240 210 180 310 C120 415 65 450 100 520 C115 520 118 510 118 500 C82 432 135 398 192 298 C253 196 240 90 162 16 Z" fill="url(#rf2)" opacity=".38"/>
+    <defs>
+      <linearGradient id="r2a" x1="100" y1="0" x2="200" y2="520" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,200,120,0.8)"/><stop offset="50%" stop-color="rgba(95,227,161,0.6)"/><stop offset="100%" stop-color="rgba(140,180,255,0.5)"/></linearGradient>
+      <linearGradient id="rf2" x1="100" y1="0" x2="200" y2="520" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,180,80,1)"/><stop offset="100%" stop-color="rgba(95,227,161,1)"/></linearGradient>
+    </defs>
+  </svg>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo" onclick="navigate('home')">
+    <div class="logo-mark">m</div>
+    MANIPLY
+  </div>
+  <ul class="nav-links">
+    <li><a onclick="navigate('how')" data-page="how">Como funciona</a></li>
+    <li><a onclick="navigate('features')" data-page="features">Funcionalidades</a></li>
+    <li><a onclick="navigate('dashboard')" data-page="dashboard">Dashboard</a></li>
+    <li><a onclick="navigate('tech')" data-page="tech">Tecnologia</a></li>
+    <li><a onclick="navigate('clients')" data-page="clients">Clientes</a></li>
+    <li><a onclick="navigate('contact')" data-page="contact">Suporte</a></li>
+  </ul>
+  <div class="nav-cta" onclick="abrirSistema()" title="Acesso exclusivo para microempreendedores">Comece seu negócio ↗</div>
+</nav>
+
+<!-- ══════════ HOME ══════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-pill fi"><span class="hero-pill-dot"></span>Plataforma de Gestão para Microempreendedores</div>
+      <h1 class="hero-title fi">MANIPLY</h1>
+      <p class="hero-tagline fi">Gerencie produtos, pedidos e estoque do seu negócio em um único lugar — sem planilhas, sem erros, sem complicação.</p>
+      <div class="hero-actions fi">
+        <button class="btn-primary" onclick="navigate('how')">Ver como funciona →</button>
+        <button class="btn-ghost" onclick="navigate('features')">Funcionalidades</button>
+      </div>
+    </div>
+  </div>
+  <div class="stats-bar fi">
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Automático</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Planilhas manuais</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Sistema integrado</div></div>
+    <div class="stat"><div class="stat-num">MVP</div><div class="stat-label">Metodologia ágil</div></div>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <p class="eyebrow fi">O que é o Maniply?</p>
+      <h2 class="sec-title fi">Da receita ao estoque,<br/>tudo em um só lugar.</h2>
+      <p class="sec-body fi">Uma plataforma criada para microempreendedores que precisam organizar seus negócios sem depender de processos manuais ou ferramentas complicadas.</p>
+      <div class="what-grid">
+        <div class="what-card big gc fi">
+          <div class="app-icon">m</div>
+          <div><p>Pensado para quem vende qualquer tipo de produto — o Maniply conecta seus produtos às suas receitas, e as receitas ao seu estoque. Quando um pedido entra, o sistema cuida do restante.</p></div>
+        </div>
+        <div class="what-card gc fi"><span class="what-icon">🎯</span><h3>Para quem é?</h3><p>Microempreendedores de qualquer segmento que precisam de controle real sem a complexidade dos ERPs tradicionais.</p></div>
+        <div class="what-card gc fi"><span class="what-icon">⚡</span><h3>Qual o diferencial?</h3><p>Atualização automática de estoque baseada nas receitas dos seus produtos — zero retrabalho, zero divergências.</p></div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ ABOUT ══════════ -->
+<!-- ══════════ HOW ══════════ -->
+<div class="page" id="page-how">
+  <div class="page-hero">
+    <div class="container">
+      <div><p class="eyebrow fi">Como funciona?</p><h1 class="sec-title fi" style="font-size:clamp(2.5rem,6vw,5rem);">Simples de usar,<br/>inteligente por dentro.</h1></div>
+      <p class="page-hero-sub fi">Do cadastro ao estoque — cada etapa foi pensada para eliminar o trabalho manual do seu dia a dia.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <div class="how-layout">
+        <div class="flow-list fi">
+
+          <div class="flow-item">
+            <div class="flow-text"><span class="flow-sub">1 Produto</span><span class="flow-desc">Cadastre seus <strong>produtos</strong> com nome, preço e quantidade</span></div>
+            <div class="flow-mock">
+              <div class="mock-row"><span class="mock-emoji">🧁</span><div class="mock-row-info"><span class="mock-row-title">Brigadeiro Gourmet</span><span class="mock-row-sub">R$ 2,50</span></div><span class="mock-badge">40 un</span></div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-text"><span class="flow-sub">2 Ingredientes</span><span class="flow-desc">Registre os <strong>ingredientes</strong> ou insumos que você utiliza</span></div>
+            <div class="flow-mock">
+              <div class="mock-tags">
+                <span class="mock-tag">🥛 Leite condensado</span>
+                <span class="mock-tag">🍫 Chocolate</span>
+                <span class="mock-tag">🧈 Manteiga</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-text"><span class="flow-sub">3 Receita</span><span class="flow-desc">Vincule cada produto à sua <strong>receita ou composição</strong></span></div>
+            <div class="flow-mock">
+              <div class="mock-link">
+                <span class="mock-tag main">🧁 Brigadeiro</span>
+                <span class="mock-link-line"></span>
+                <div class="mock-link-targets">
+                  <span class="mock-tag small">🥛 Leite</span>
+                  <span class="mock-tag small">🍫 Choc.</span>
+                  <span class="mock-tag small">🧈 Mant.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-text"><span class="flow-sub">4 Pedido</span><span class="flow-desc">Receba um <strong>pedido</strong> do cliente e registre no sistema</span></div>
+            <div class="flow-mock">
+              <div class="mock-ticket">
+                <span class="mock-ticket-num">Pedido #032</span>
+                <span class="mock-ticket-item">🧁 Brigadeiro Gourmet <strong>× 10</strong></span>
+                <span class="mock-ticket-client">Cliente: João</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-text"><span class="flow-sub">5 Consulta</span><span class="flow-desc">O sistema <strong>consulta a receita</strong> do produto automaticamente</span></div>
+            <div class="flow-mock">
+              <div class="mock-scan">
+                <span class="mock-tag main">🧁 Brigadeiro</span>
+                <span class="mock-scan-glass">🔎</span>
+                <span class="mock-scan-label">verificando receita…</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item accent">
+            <div class="flow-text"><span class="flow-sub">Pronto</span><span class="flow-desc"><strong>Estoque atualizado instantaneamente</strong> — sem nenhuma intervenção manual</span></div>
+            <div class="flow-mock">
+              <div class="mock-stock">
+                <div class="mock-stock-labels"><span>Leite condensado</span><span>40 → 30 un</span></div>
+                <div class="mock-stock-bar"><div class="mock-stock-fill"></div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="compare-cards fi">
+          <div class="cmp-card gc"><h4>Antes do Maniply</h4><p>Planilhas desatualizadas, pedidos no papel, estoque divergente e tempo desperdiçado em tarefas que não geram receita. Erros constantes e decisões baseadas em dados incorretos.</p></div>
+          <div class="cmp-card gc good"><h4>Com o Maniply</h4><p>Um único sistema cuida de tudo — do cadastro ao estoque — para você focar no que realmente importa: produzir e vender. Dados sempre atualizados, em tempo real.</p></div>
+          <div class="cmp-card gc"><h4>Visão do negócio</h4><p>Acompanhe produtos disponíveis, histórico de vendas e movimentação do estoque. Tudo centralizado, nada se perde.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ FEATURES ══════════ -->
+<div class="page" id="page-features">
+  <div class="page-hero">
+    <div class="container">
+      <div><p class="eyebrow fi">Funcionalidades</p><h1 class="sec-title fi" style="font-size:clamp(2.5rem,6vw,5rem);">O que o Maniply<br/>faz por você.</h1></div>
+      <p class="page-hero-sub fi">Cada funcionalidade foi desenhada para resolver um problema real do dia a dia de quem vende.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <div class="feat-big fi">
+        <div class="feat gc"><span class="feat-icon">📦</span><h3>Cadastro de Produtos</h3><p>Nome, preço e quantidade. Simples assim — sem planilhas.</p></div>
+        <div class="feat gc"><span class="feat-icon">📋</span><h3>Gestão de Receitas</h3><p>Ligue os ingredientes ao produto e o estoque se ajusta sozinho a cada venda.</p></div>
+      </div>
+      <div class="feat-grid fi">
+        <div class="feat gc"><span class="feat-icon">🛒</span><h3>Pedidos & Vendas</h3><p>Registre uma venda em segundos.</p></div>
+        <div class="feat gc"><span class="feat-icon">📊</span><h3>Estoque Automático</h3><p>Vendeu, o estoque já desconta. Sem trabalho manual.</p></div>
+        <div class="feat gc"><span class="feat-icon">🗂️</span><h3>Visão Centralizada</h3><p>Tudo do seu negócio, num só lugar.</p></div>
+        <div class="feat gc soon"><span class="feat-icon" style="opacity:.4;">📈</span><h3>Dashboard & Relatórios</h3><p>Gráficos e alertas de estoque — em breve.</p></div>
+        <div class="feat gc soon" style="grid-column:2/4;"><span class="feat-icon" style="opacity:.4;">🛵</span><h3>Delivery & Pagamentos Online</h3><p>Delivery e pagamento digital — em breve.</p></div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ NEGÓCIO (COMECE SEU NEGÓCIO) ══════════ -->
+<div class="page" id="page-business">
+  <div class="page-hero">
+    <div class="container">
+      <div><p class="eyebrow fi">Plataforma Maniply</p><h1 class="sec-title fi" style="font-size:clamp(2.5rem,6vw,5rem);">O sistema,<br/>separado do site.</h1></div>
+      <p class="page-hero-sub fi">Um ambiente próprio: aqui você cadastra seu negócio e seus produtos, e o estoque se atualiza sozinho a cada venda.</p>
+    </div>
+  </div>
+  <div class="sec" style="padding-top:36px;">
+    <div class="container">
+      <div class="sys-shell fi">
+        <div class="sys-topbar">
+          <div class="sys-brand"><div class="logo-mark">m</div>MANIPLY <span class="sys-brand-tag">● Sistema</span></div>
+          <div class="sys-tabs">
+            <button class="sys-tab active" data-tab="cadastro" onclick="showSysTab('cadastro')">Cadastro do negócio</button>
+            <button class="sys-tab" data-tab="loja" onclick="showSysTab('loja')">Pré-visualizar loja</button>
+          </div>
+        </div>
+
+        <div class="sys-body">
+
+          <!-- ── CADASTRO (EMPREENDEDOR + PRODUTOS) ── -->
+          <div class="sys-view active" id="sys-cadastro">
+            <div class="sys-view-head">
+              <h2>Área do microempreendedor</h2>
+              <p>Cadastre os dados do seu negócio e os produtos que você vende. Essa área é de uso interno — separada da loja que os clientes veem.</p>
+            </div>
+
+            <div class="founder-layout">
+              <div class="form-card gc">
+                <h3>Dados do negócio</h3>
+                <div class="form-group">
+                  <label>Nome do responsável</label>
+                  <input class="form-input" id="biz-owner" type="text" placeholder="Ex: Maria Silva"/>
+                </div>
+                <div class="form-group">
+                  <label>Nome do negócio</label>
+                  <input class="form-input" id="biz-name" type="text" placeholder="Ex: Doces da Maria"/>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>WhatsApp</label>
+                    <input class="form-input" id="biz-phone" type="text" placeholder="(00) 00000-0000"/>
+                  </div>
+                  <div class="form-group" style="grid-column:1/-1;">
+                    <label>Segmento</label>
+                    <input type="hidden" id="biz-segment" value=""/>
+                    <div class="segment-grid" id="segment-grid">
+                      <button type="button" class="segment-chip" data-seg="Alimentos e Bebidas" onclick="selectSegment(this)"><span class="segment-chip-icon">🍰</span>Alimentos e Bebidas</button>
+                      <button type="button" class="segment-chip" data-seg="Moda e Vestuário" onclick="selectSegment(this)"><span class="segment-chip-icon">👗</span>Moda e Vestuário</button>
+                      <button type="button" class="segment-chip" data-seg="Beleza e Estética" onclick="selectSegment(this)"><span class="segment-chip-icon">💄</span>Beleza e Estética</button>
+                      <button type="button" class="segment-chip" data-seg="Artesanato" onclick="selectSegment(this)"><span class="segment-chip-icon">🎨</span>Artesanato</button>
+                      <button type="button" class="segment-chip" data-seg="Papelaria e Presentes" onclick="selectSegment(this)"><span class="segment-chip-icon">🎁</span>Papelaria e Presentes</button>
+                      <button type="button" class="segment-chip" data-seg="Serviços" onclick="selectSegment(this)"><span class="segment-chip-icon">🛠️</span>Serviços</button>
+                      <button type="button" class="segment-chip" data-seg="Casa e Decoração" onclick="selectSegment(this)"><span class="segment-chip-icon">🪴</span>Casa e Decoração</button>
+                      <button type="button" class="segment-chip" data-seg="Pet Shop" onclick="selectSegment(this)"><span class="segment-chip-icon">🐾</span>Pet Shop</button>
+                      <button type="button" class="segment-chip" data-seg="Tecnologia" onclick="selectSegment(this)"><span class="segment-chip-icon">💻</span>Tecnologia</button>
+                      <button type="button" class="segment-chip" data-seg="Outros" onclick="selectSegment(this)"><span class="segment-chip-icon">🏷️</span>Outros</button>
+                    </div>
+                  </div>
+                </div>
+                <button class="form-submit" onclick="registerBusiness()">Cadastrar negócio</button>
+                <div class="form-msg success" id="biz-msg">✓ Negócio cadastrado com sucesso!</div>
+              </div>
+
+              <div class="gc" style="padding:28px;">
+                <h3 style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:18px;">Negócio ativo</h3>
+                <div id="biz-empty" style="color:rgba(255,255,255,0.3);font-size:.88rem;">Nenhum negócio cadastrado ainda nesta sessão.</div>
+                <div id="biz-active" style="display:none;">
+                  <p style="font-size:1.1rem;font-weight:800;" id="biz-active-name"></p>
+                  <p style="color:var(--dim);font-size:.86rem;margin-top:4px;" id="biz-active-owner"></p>
+                  <p style="color:var(--dim);font-size:.82rem;margin-top:14px;">📞 <span id="biz-active-phone"></span></p>
+                  <p style="color:var(--dim);font-size:.82rem;">🏷️ <span id="biz-active-segment"></span></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider-label">Catálogo de produtos</div>
+
+            <div class="products-layout">
+              <div class="form-card gc">
+                <h3>Novo produto</h3>
+                <div class="form-group">
+                  <label>Nome do produto</label>
+                  <input class="form-input" id="prod-name" type="text" placeholder="Ex: Brigadeiro Gourmet"/>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Preço (R$)</label>
+                    <input class="form-input" id="prod-price" type="number" min="0" step="0.01" placeholder="0,00"/>
+                  </div>
+                  <div class="form-group">
+                    <label>Quantidade em estoque</label>
+                    <input class="form-input" id="prod-qty" type="number" min="0" placeholder="0"/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Categoria</label>
+                  <input class="form-input" id="prod-cat" type="text" placeholder="Ex: Vestuário, Alimentos…"/>
+                </div>
+                <button class="form-submit" onclick="addProduct()">Cadastrar produto</button>
+                <div class="form-msg success" id="form-msg">✓ Produto cadastrado com sucesso!</div>
+              </div>
+
+              <div class="prod-panel gc">
+                <div class="prod-panel-header">
+                  <h3>Produtos e estoque</h3>
+                  <span class="prod-count" id="prod-count">0</span>
+                </div>
+                <div class="prod-list" id="prod-list">
+                  <div class="prod-empty" id="prod-empty">Nenhum produto cadastrado ainda.<br/>Adicione seu primeiro produto ao lado.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider-label">Vendas realizadas</div>
+            <div class="gc" style="padding:26px;">
+              <p style="font-size:.78rem;color:var(--dim);margin-bottom:16px;">Toda venda feita pelo cliente na aba <strong style="color:var(--white);">Clientes</strong> aparece aqui e já desconta do estoque acima — automaticamente.</p>
+              <div class="sales-list" id="sales-list">
+                <div class="sales-empty" id="sales-empty">Nenhuma venda registrada ainda.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── PRÉ-VISUALIZAÇÃO DA LOJA DO CLIENTE ── -->
+          <div class="sys-view" id="sys-loja">
+            <div class="sys-view-head">
+              <h2>Veja como o cliente compra</h2>
+              <p>Esta é uma prévia da experiência que o seu cliente vê: ele informa <strong style="color:var(--white);">nome</strong> e <strong style="color:var(--white);">telefone</strong>, escolhe a quantidade e finaliza — o estoque acima é atualizado na hora.</p>
+            </div>
+
+            <div class="form-card gc" style="max-width:420px;margin-bottom:28px;">
+              <h3>Seus dados</h3>
+              <div class="form-group">
+                <label>Nome</label>
+                <input class="form-input" id="cli-name" type="text" placeholder="Seu nome"/>
+              </div>
+              <div class="form-group">
+                <label>Telefone</label>
+                <input class="form-input" id="cli-phone" type="text" placeholder="(00) 00000-0000"/>
+              </div>
+              <button class="form-submit" onclick="registerClient()">Cadastrar</button>
+              <div class="form-msg success" id="cli-msg">✓ Cadastro realizado com sucesso!</div>
+            </div>
+
+            <div class="store-grid" id="store-grid">
+              <div class="store-empty" id="store-empty">Nenhum produto disponível ainda. Peça para o microempreendedor cadastrar produtos na aba Cadastro.</div>
+            </div>
+            <div class="cart-toast" id="cart-toast">✓ Compra realizada! Estoque atualizado automaticamente.</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ CLIENTES (RESUMO) ══════════ -->
+<div class="page" id="page-clients">
+  <div class="page-hero">
+    <div class="container">
+      <div><p class="eyebrow fi">Para quem compra</p><h1 class="sec-title fi" style="font-size:clamp(2.5rem,6vw,5rem);">A loja,<br/>direto do microempreendedor.</h1></div>
+      <p class="page-hero-sub fi">Um resumo rápido de como funciona a experiência de compra para você, cliente.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <div class="how-layout">
+        <div class="flow-list fi">
+          <div class="flow-item">
+            <div class="flow-icon">🛍️</div>
+            <div class="flow-text"><span class="flow-sub">1 Produtos</span><span class="flow-desc">Veja os <strong>produtos disponíveis</strong> do microempreendedor, com preço e quantidade em estoque</span></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-icon">📝</div>
+            <div class="flow-text"><span class="flow-sub">2 Cadastro</span><span class="flow-desc">Informe apenas seu <strong>nome</strong> e <strong>telefone</strong> — rápido e sem burocracia</span></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-icon">🧮</div>
+            <div class="flow-text"><span class="flow-sub">3 Quantidade</span><span class="flow-desc">Escolha a <strong>quantidade</strong> que deseja comprar de cada produto</span></div>
+          </div>
+          <div class="flow-item accent">
+            <div class="flow-icon">✓</div>
+            <div class="flow-text"><span class="flow-sub">Pronto</span><span class="flow-desc"><strong>Compra finalizada</strong> — o estoque do microempreendedor é atualizado na hora</span></div>
+          </div>
+        </div>
+        <div class="compare-cards fi">
+          <div class="cmp-card gc good"><h4>Sem complicação</h4><p>Nada de cadastros longos ou aplicativos separados: você compra em poucos cliques, direto pelo espaço do microempreendedor.</p></div>
+          <div class="cmp-card gc"><h4>Estoque sempre real</h4><p>O que você vê disponível é exatamente o que existe — o estoque é atualizado automaticamente a cada compra.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div class="page" id="page-dashboard">
+  <div class="page-hero">
+    <div class="container">
+      <div><p class="eyebrow fi">Dashboard</p><h1 class="sec-title fi" style="font-size:clamp(2.5rem,6vw,5rem);">Visão geral<br/>do negócio.</h1></div>
+      <p class="page-hero-sub fi">Acompanhe as métricas do seu negócio em tempo real — vendas, estoque e desempenho.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <div class="dash-grid fi">
+        <div class="dash-stat-card gc">
+          <span class="ds-label">Vendas hoje</span>
+          <div class="ds-val">R$ 1.240</div>
+          <span class="ds-trend up">↑ 18% vs ontem</span>
+        </div>
+        <div class="dash-stat-card gc">
+          <span class="ds-label">Pedidos do mês</span>
+          <div class="ds-val">347</div>
+          <span class="ds-trend up">↑ 24 esta semana</span>
+        </div>
+        <div class="dash-stat-card gc">
+          <span class="ds-label">Produtos ativos</span>
+          <div class="ds-val">28</div>
+          <span class="ds-sub">3 com estoque baixo</span>
+        </div>
+        <div class="dash-stat-card gc">
+          <span class="ds-label">Ticket médio</span>
+          <div class="ds-val">R$ 57</div>
+          <span class="ds-trend warn">↓ 3% vs semana passada</span>
+        </div>
+      </div>
+      <div class="dash-bottom fi">
+        <div class="dash-chart-card gc">
+          <h4>Vendas — últimos 7 dias</h4>
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+        <div class="dash-stock-card gc">
+          <h4>Nível de estoque</h4>
+          <div class="stock-row"><span class="stock-name">Produto A</span><div class="stock-bar-wrap"><div class="stock-bar-fill ok" style="width:82%"></div></div><span class="stock-val">82%</span></div>
+          <div class="stock-row"><span class="stock-name">Produto B</span><div class="stock-bar-wrap"><div class="stock-bar-fill ok" style="width:65%"></div></div><span class="stock-val">65%</span></div>
+          <div class="stock-row"><span class="stock-name">Produto C</span><div class="stock-bar-wrap"><div class="stock-bar-fill warn" style="width:18%;background:#ffc850"></div></div><span class="stock-val">18%</span></div>
+          <div class="stock-row"><span class="stock-name">Produto D</span><div class="stock-bar-wrap"><div class="stock-bar-fill low" style="width:8%"></div></div><span class="stock-val">8%</span></div>
+          <div class="stock-row"><span class="stock-name">Produto E</span><div class="stock-bar-wrap"><div class="stock-bar-fill ok" style="width:91%"></div></div><span class="stock-val">91%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ TECH ══════════ -->
+<div class="page" id="page-tech">
+  <div class="page-hero">
+    <div class="container">
+      <div><p class="eyebrow fi">Tecnologia</p><h1 class="sec-title fi" style="font-size:clamp(2.5rem,6vw,5rem);">Uma base sólida,<br/>pronta para crescer.</h1></div>
+      <p class="page-hero-sub fi">Você não precisa entender de tecnologia para confiar nela. Por trás do Maniply está um sistema de dados mais seguro e sempre atualizado, pensado para acompanhar o ritmo do seu negócio.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <div class="tech-stack fi">
+        <div class="tech-card gc"><span class="tech-card-icon">⚡</span><h3>Desempenho</h3><p>Tudo acontece na hora, sem travar.</p><span class="tech-tag">Rápido</span></div>
+        <div class="tech-card gc"><span class="tech-card-icon">🔒</span><h3>Segurança dos dados</h3><p>Seus dados e os do cliente, protegidos.</p><span class="tech-tag">Confiável</span></div>
+        <div class="tech-card gc"><span class="tech-card-icon">🔄</span><h3>Evolução contínua</h3><p>Melhorias constantes, sempre chegando.</p><span class="tech-tag">Sempre melhorando</span></div>
+        <div class="tech-card gc"><span class="tech-card-icon">🌱</span><h3>Pronto para crescer</h3><p>Cresce junto com o seu negócio.</p><span class="tech-tag">Escalável</span></div>
+      </div>
+      <div class="tech-future gc fi" style="margin-top:14px;">
+        <h3>O que vem por aí</h3>
+        <div class="future-items">
+          <span class="future-tag"><span class="dot"></span>Aplicativo mobile</span>
+          <span class="future-tag"><span class="dot"></span>Pagamentos integrados</span>
+          <span class="future-tag"><span class="dot"></span>Integração com delivery</span>
+          <span class="future-tag"><span class="dot"></span>Relatórios em PDF</span>
+          <span class="future-tag"><span class="dot"></span>Alertas de estoque baixo</span>
+          <span class="future-tag"><span class="dot"></span>Múltiplos usuários</span>
+        </div>
+      </div>
+      <div class="arch-timeline fi">
+        <div class="timeline-steps">
+          <div class="ts active-phase"><div class="ts-label">Hoje</div><div class="ts-title">Gestão essencial</div><div class="ts-body">Cadastro, vendas e estoque automático, tudo em um só lugar.</div></div>
+          <div class="ts"><div class="ts-label">Próxima etapa</div><div class="ts-title">Painéis e relatórios</div><div class="ts-body">Relatórios exportáveis e alertas inteligentes de estoque baixo.</div></div>
+          <div class="ts"><div class="ts-label">Em breve</div><div class="ts-title">App mobile</div><div class="ts-body">Gerencie seu negócio direto do celular, onde você estiver.</div></div>
+          <div class="ts"><div class="ts-label">Visão de futuro</div><div class="ts-title">Plataforma completa</div><div class="ts-body">Múltiplos usuários, delivery e pagamentos integrados.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<!-- ══════════ SUPORTE ══════════ -->
+<div class="page" id="page-contact">
+  <div class="contact-big">
+    <p class="eyebrow fi" style="justify-content:center;display:flex;">Suporte</p>
+    <h1 class="fi">Como podemos<br/>ajudar?</h1>
+    <p class="fi">Tire suas dúvidas sobre o Maniply e conheça um pouco mais sobre o projeto.</p>
+  </div>
+  <div class="sec">
+    <div class="container">
+      <div class="contact-layout">
+        <div class="contact-main gc fi">
+          <div>
+            <h2>Fale com<br/>o suporte</h2>
+            <p>Tem dúvidas sobre como cadastrar produtos, registrar vendas ou usar a plataforma? Nossa equipe está pronta para ajudar.</p>
+          </div>
+          <div class="contact-links">
+            <a class="contact-link" href="mailto:valentelucas711@gmail.com"><span>✉️</span> suporte@maniply.com</a>
+            <a class="contact-link" href="#" onclick="return false;"><span>💬</span> Chat de suporte (em breve)</a>
+          </div>
+        </div>
+        <div class="contact-side fi">
+          <div class="contact-info-card gc"><h4>Suporte</h4><p>Equipe Maniply</p><span>Prontos para ajudar microempreendedores e clientes a aproveitar melhor a plataforma.</span></div>
+          <div class="contact-info-card gc"><h4>Tempo de resposta</h4><p>Até 24h úteis</p><span>Respondemos dúvidas e solicitações o mais rápido possível.</span></div>
+          <div class="contact-info-card gc"><h4>Status da plataforma</h4><p style="color:var(--green);">● Em desenvolvimento ativo</p><span>Novas funcionalidades sendo planejadas com base no retorno de quem usa.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><span>© 2025 MANIPLY</span><span style="font-style:italic;font-weight:900;">m</span><span>Lucas Valente</span></footer>
+</div>
+
+<script>
+  // ── Router ──
+  function navigate(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('page-' + page);
+    if (target) { target.classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+    document.querySelectorAll('.nav-links a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+    setTimeout(initFi, 60);
+    if (page === 'dashboard') buildChart();
+    if (page === 'business') { renderProducts(); renderStore(); renderSales(); }
+  }
+
+  // ── Página de negócio: navegação interna por abas (Cadastro do negócio / Pré-visualizar loja) ──
+  function showSysTab(tab) {
+    document.querySelectorAll('.sys-view').forEach(v => v.classList.remove('active'));
+    document.getElementById('sys-' + tab).classList.add('active');
+    document.querySelectorAll('.sys-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    if (tab === 'loja') renderStore();
+  }
+
+  // Atalho: "Comece seu negócio" -> abre a página de negócio, na aba de Cadastro
+  function abrirSistema() {
+    navigate('business');
+    showSysTab('cadastro');
+  }
+
+  // ── Fade-in ──
+  let observer;
+  function initFi() {
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('v'); });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.page.active .fi').forEach((el) => {
+      el.classList.remove('v');
+      const siblings = [...el.parentElement.querySelectorAll(':scope > .fi')];
+      el.style.transitionDelay = `${siblings.indexOf(el) * 0.065}s`;
+      observer.observe(el);
+    });
+  }
+
+  // ── Seleção de segmento (categorias clicáveis) ──
+  function selectSegment(btn) {
+    document.querySelectorAll('#segment-grid .segment-chip').forEach(c => c.classList.remove('picked'));
+    btn.classList.add('picked');
+    document.getElementById('biz-segment').value = btn.dataset.seg;
+  }
+
+  // ── Cadastro do negócio (microempreendedor) ──
+  function registerBusiness() {
+    const owner   = document.getElementById('biz-owner').value.trim();
+    const bizName = document.getElementById('biz-name').value.trim();
+    const phone   = document.getElementById('biz-phone').value.trim();
+    const segment = document.getElementById('biz-segment').value.trim() || 'Geral';
+    if (!owner || !bizName) return;
+    document.getElementById('biz-active-name').textContent = bizName;
+    document.getElementById('biz-active-owner').textContent = 'Responsável: ' + owner;
+    document.getElementById('biz-active-phone').textContent = phone || 'Não informado';
+    document.getElementById('biz-active-segment').textContent = segment;
+    document.getElementById('biz-empty').style.display = 'none';
+    document.getElementById('biz-active').style.display = 'block';
+    const msg = document.getElementById('biz-msg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2400);
+  }
+
+  // ── Cadastro do cliente (nome + telefone) ──
+  function registerClient() {
+    const name  = document.getElementById('cli-name').value.trim();
+    const phone = document.getElementById('cli-phone').value.trim();
+    if (!name || !phone) return;
+    const msg = document.getElementById('cli-msg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2400);
+  }
+
+  // ── Produtos + Estoque (área do microempreendedor) ──
+  let products = [];
+  function addProduct() {
+    const name  = document.getElementById('prod-name').value.trim();
+    const price = parseFloat(document.getElementById('prod-price').value);
+    const qty   = parseInt(document.getElementById('prod-qty').value);
+    const cat   = document.getElementById('prod-cat').value.trim() || 'Geral';
+    if (!name || isNaN(price) || isNaN(qty)) return;
+    products.push({ id: Date.now(), name, price, qty, cat });
+    renderProducts();
+    renderStore();
+    document.getElementById('prod-name').value = '';
+    document.getElementById('prod-price').value = '';
+    document.getElementById('prod-qty').value = '';
+    document.getElementById('prod-cat').value = '';
+    const msg = document.getElementById('form-msg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2400);
+  }
+  function deleteProduct(id) {
+    products = products.filter(p => p.id !== id);
+    renderProducts();
+    renderStore();
+  }
+  function renderProducts() {
+    const list = document.getElementById('prod-list');
+    const empty = document.getElementById('prod-empty');
+    const count = document.getElementById('prod-count');
+    if (!list) return;
+    count.textContent = products.length;
+    if (products.length === 0) {
+      empty.style.display = 'block';
+      list.innerHTML = '';
+      list.appendChild(empty);
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = products.map(p => `
+      <div class="prod-item">
+        <div class="prod-item-info">
+          <div class="prod-item-name">${p.name}</div>
+          <div class="prod-item-cat">${p.cat}</div>
+        </div>
+        <div class="prod-item-right">
+          <span class="prod-item-price">R$ ${p.price.toFixed(2)}</span>
+          <span class="prod-item-qty">${p.qty} un.</span>
+          <button class="prod-item-del" onclick="deleteProduct(${p.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Loja (área do cliente) ──
+  function renderStore() {
+    const grid = document.getElementById('store-grid');
+    if (!grid) return;
+    if (products.length === 0) {
+      grid.innerHTML = '<div class="store-empty" id="store-empty">Nenhum produto disponível ainda. Peça para o microempreendedor cadastrar produtos na aba Cadastro.</div>';
+      return;
+    }
+    grid.innerHTML = products.map(p => `
+      <div class="store-card gc">
+        <div class="store-card-top">
+          <div>
+            <div class="store-card-name">${p.name}</div>
+            <span class="store-card-cat">${p.cat}</span>
+          </div>
+        </div>
+        <div class="store-card-price">R$ ${p.price.toFixed(2)}</div>
+        <div class="store-card-stock ${p.qty <= 3 ? 'low' : ''}">${p.qty > 0 ? p.qty + ' un. em estoque' : 'Esgotado'}</div>
+        <div class="store-buy-row">
+          <input class="store-qty" type="number" min="1" max="${p.qty}" value="1" id="buy-qty-${p.id}" ${p.qty === 0 ? 'disabled' : ''}/>
+          <button class="store-buy-btn" onclick="buyProduct(${p.id})" ${p.qty === 0 ? 'disabled' : ''}>Comprar</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function buyProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const input = document.getElementById('buy-qty-' + id);
+    let qty = parseInt(input.value);
+    if (isNaN(qty) || qty <= 0) return;
+    if (qty > product.qty) qty = product.qty;
+
+    // baixa automática de estoque
+    product.qty -= qty;
+
+    sales.push({
+      id: Date.now(),
+      productName: product.name,
+      qty,
+      total: qty * product.price,
+      date: new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+    });
+
+    renderProducts();
+    renderStore();
+    renderSales();
+
+    const toast = document.getElementById('cart-toast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2600);
+  }
+
+  // ── Vendas (histórico, visível na área do microempreendedor) ──
+  let sales = [];
+  function renderSales() {
+    const list = document.getElementById('sales-list');
+    const empty = document.getElementById('sales-empty');
+    if (!list) return;
+    if (sales.length === 0) {
+      list.innerHTML = '';
+      list.appendChild(empty || document.createElement('div'));
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    list.innerHTML = [...sales].reverse().map(s => `
+      <div class="sale-row">
+        <div class="sale-row-l">
+          <span class="sale-row-name">${s.productName}</span>
+          <span class="sale-row-meta">${s.qty} un. · ${s.date}</span>
+        </div>
+        <span class="sale-row-total">R$ ${s.total.toFixed(2)}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── Bar chart (dashboard) ──
+  const salesData = [
+    {day:'Seg', val:68}, {day:'Ter', val:82}, {day:'Qua', val:54},
+    {day:'Qui', val:91}, {day:'Sex', val:110}, {day:'Sáb', val:95}, {day:'Dom', val:73}
+  ];
+  const maxVal = Math.max(...salesData.map(d => d.val));
+  function buildChart() {
+    const chart = document.getElementById('bar-chart');
+    if (!chart) return;
+    chart.innerHTML = salesData.map((d, i) => `
+      <div class="bar-wrap">
+        <div class="bar ${i === 4 ? 'accent' : ''}" style="height:${Math.round((d.val / maxVal) * 100)}%"></div>
+        <span class="bar-lbl">${d.day}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── Mouse parallax ──
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 18;
+    const y = (e.clientY / window.innerHeight - 0.5) * 14;
+    document.querySelectorAll('.blob').forEach((b, i) => {
+      const d = (i % 2 === 0 ? 1 : -1) * (i * 0.4 + 0.6);
+      b.style.transform = `translate(${x * d}px, ${y * d}px)`;
+    });
+  });
+
+  // Allow Enter key inside system forms (cadastro de produto, negócio)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!document.getElementById('page-business').classList.contains('active')) return;
+    const active = document.activeElement;
+    if (!active) return;
+    if (['prod-name','prod-price','prod-qty','prod-cat'].includes(active.id)) addProduct();
+    if (['biz-owner','biz-name','biz-phone','biz-segment'].includes(active.id)) registerBusiness();
+    if (['cli-name','cli-phone'].includes(active.id)) registerClient();
+  });
+
+  initFi();
+</script>
+</body>
+</html>
